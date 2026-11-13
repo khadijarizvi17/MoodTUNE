@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moodtune</title>
+<style>
+  :root {
+    --c1: #7c5cff; --c2: #22d3ee;
+    --bg: #0b0b14; --card: rgba(255,255,255,.06); --line: rgba(255,255,255,.12);
+    --text: #f3f4f8; --muted: #a0a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    min-height: 100vh; background: var(--bg); color: var(--text);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 32px 16px 64px; overflow-x: hidden;
+  }
+  .glow { position: fixed; inset: 0; z-index: -1; transition: background .8s ease;
+    background:
+      radial-gradient(600px 400px at 15% 10%, color-mix(in srgb, var(--c1) 45%, transparent), transparent 70%),
+      radial-gradient(600px 400px at 90% 90%, color-mix(in srgb, var(--c2) 40%, transparent), transparent 70%); }
+  main { max-width: 760px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  .logo { font-size: 13px; letter-spacing: .25em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: clamp(30px, 6vw, 46px); margin: 8px 0 6px; letter-spacing: -.02em; line-height: 1.1; }
+  h1 span { background: linear-gradient(90deg, var(--c1), var(--c2)); -webkit-background-clip: text; background-clip: text; color: transparent; transition: all .6s; }
+  .sub { color: var(--muted); font-size: 15px; }
+
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  textarea {
+    width: 100%; min-height: 96px; resize: vertical; background: transparent; color: var(--text);
+    border: 0; outline: 0; font: inherit; font-size: 17px; line-height: 1.5;
+  }
+  textarea::placeholder { color: #70728a; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }
+  .chip { border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text);
+    padding: 7px 12px; border-radius: 999px; font-size: 14px; cursor: pointer; transition: all .2s; }
+  .chip:hover { transform: translateY(-2px); border-color: var(--c1); }
+  .chip.active { background: linear-gradient(90deg, var(--c1), var(--c2)); border-color: transparent; color: #0b0b14; font-weight: 600; }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
+    border-top: 1px solid var(--line); padding-top: 14px; }
+  .group { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .seg { display: inline-flex; background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { background: none; border: 0; color: var(--muted); padding: 6px 11px; font: inherit; font-size: 13px; cursor: pointer; }
+  .seg button.on { background: rgba(255,255,255,.14); color: var(--text); }
+  input[type=range] { accent-color: var(--c1); width: 110px; }
+  .go { border: 0; cursor: pointer; padding: 12px 22px; border-radius: 12px; font: inherit; font-weight: 700; font-size: 15px;
+    color: #0b0b14; background: linear-gradient(90deg, var(--c1), var(--c2)); transition: transform .15s, box-shadow .3s;
+    box-shadow: 0 8px 28px -8px var(--c1); }
+  .go:hover { transform: translateY(-2px); }
+  .go:active { transform: scale(.97); }
+
+  #result { margin-top: 24px; display: none; }
+  .vibe { display: flex; gap: 14px; align-items: flex-start; }
+  .emoji { font-size: 44px; line-height: 1; filter: drop-shadow(0 6px 14px rgba(0,0,0,.4)); animation: float 3s ease-in-out infinite; }
+  @keyframes float { 50% { transform: translateY(-6px); } }
+  .vibe h2 { font-size: 22px; margin-bottom: 4px; }
+  .vibe p { color: #d6d8e6; line-height: 1.55; }
+  .meta { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; }
+  .tag { padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--muted); }
+  .bar { height: 5px; background: rgba(255,255,255,.1); border-radius: 9px; overflow: hidden; margin-top: 14px; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--c1), var(--c2)); transition: width .9s ease; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 10px; }
+  .ghost { background: rgba(255,255,255,.06); border: 1px solid var(--line); color: var(--text); padding: 8px 14px;
+    border-radius: 10px; font: inherit; font-size: 13px; cursor: pointer; transition: all .2s; }
+  .ghost:hover { border-color: var(--c1); transform: translateY(-1px); }
+
+  ol { list-style: none; padding: 0; display: grid; gap: 10px; }
+  li.song { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+    opacity: 0; transform: translateY(10px); animation: in .45s ease forwards; transition: border-color .2s, transform .2s; }
+  li.song:hover { border-color: var(--c1); transform: translateX(3px); }
+  @keyframes in { to { opacity: 1; transform: none; } }
+  .num { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 14px; text-align: center; }
+  .t { font-weight: 600; font-size: 16px; }
+  .a { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .lang { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; padding: 2px 6px;
+    border-radius: 6px; background: rgba(255,255,255,.1); color: var(--muted); vertical-align: middle; }
+  .links { display: flex; gap: 6px; }
+  .links a { text-decoration: none; font-size: 12px; font-weight: 600; padding: 7px 10px; border-radius: 9px; color: #0b0b14; }
+  .yt { background: #ff6b6b; } .sp { background: #4ade80; }
+  .fav { background: none; border: 0; font-size: 18px; cursor: pointer; color: var(--muted); }
+  .fav.on { color: #ff5d8f; }
+
+  .history { margin-top: 30px; }
+  .history h3 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .history h3 button { background: none; border: 0; color: var(--muted); cursor: pointer; font: inherit; text-transform: none; letter-spacing: 0; }
+  .hlist { display: flex; flex-direction: column; gap: 8px; }
+  .h { text-align: left; cursor: pointer; background: var(--card); border: 1px solid var(--line); color: var(--text);
+    padding: 10px 14px; border-radius: 12px; font: inherit; font-size: 14px; display: flex; gap: 10px; align-items: center; }
+  .h:hover { border-color: var(--c1); }
+  .h small { color: var(--muted); margin-left: auto; white-space: nowrap; }
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 30px); opacity: 0; background: #fff; color: #111;
+    padding: 10px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; transition: all .3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  footer { text-align: center; color: #5d6078; font-size: 12px; margin-top: 40px; }
+  @media (max-width: 520px) {
+    li.song { grid-template-columns: 26px 1fr; }
+    .links { grid-column: 2; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } li.song { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<main>
+  <header>
+    <div class="logo" id="greet">Moodtune</div>
+    <h1>How are you <span>feeling</span> right now?</h1>
+    <p class="sub">Type it in English, Urdu or Hinglish. We'll read the vibe and build your playlist.</p>
+  </header>
+
+  <section class="panel">
+    <textarea id="text" placeholder="e.g. aaj bohat udaas hoon, kuch purane gaane sunne hain..."></textarea>
+    <div class="chips" id="chips"></div>
+    <div class="controls">
+      <div class="group">Language
+        <div class="seg" id="lang">
+          <button data-v="any" class="on">All</button>
+          <button data-v="en">English</button>
+          <button data-v="ur">Urdu/Hindi</button>
+        </div>
+      </div>
+      <div class="group">Songs <input type="range" id="count" min="4" max="15" value="8"> <b id="countv">8</b></div>
+      <button class="go" id="go">Generate vibe ✨</button>
+    </div>
+  </section>
+
+  <section id="result">
+    <div class="panel">
+      <div class="vibe">
+        <div class="emoji" id="emoji"></div>
+        <div>
+          <h2 id="label"></h2>
+          <p id="vibe"></p>
+          <div class="meta" id="meta"></div>
+        </div>
+      </div>
+      <div class="bar"><i id="conf"></i></div>
+    </div>
+    <div class="toolbar">
+      <button class="ghost" id="shuffle">🔀 Shuffle new songs</button>
+      <button class="ghost" id="copy">📋 Copy list</button>
+      <button class="ghost" id="download">⬇️ Download .txt</button>
+      <button class="ghost" id="ytall">▶️ Open all on YouTube</button>
+    </div>
+    <ol id="songs"></ol>
+  </section>
+
+  <section class="history" id="hist" style="display:none">
+    <h3>Recent moods <button id="clearh">Clear</button></h3>
+    <div class="hlist" id="hlist"></div>
+  </section>
+
+  <footer>Made with Python + vibes · songs open as searches on YouTube / Spotify</footer>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { mood: null, language: "any", last: null, favs: new Set() };
+
+function store(key, val) { try { if (val === undefined) return JSON.parse(localStorage.getItem(key)); localStorage.setItem(key, JSON.stringify(val)); } catch (e) { return null; } }
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+function theme(colors) { document.documentElement.style.setProperty("--c1", colors[0]); document.documentElement.style.setProperty("--c2", colors[1]); }
+
+(function greeting() {
+  const h = new Date().getHours();
+  $("greet").textContent = (h < 5 ? "Late night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : h < 21 ? "Good evening" : "Night owl") + " · Moodtune";
+})();
+
+fetch("/api/moods").then(r => r.json()).then(moods => {
+  $("chips").innerHTML = "";
+  moods.forEach(m => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = m.emoji + " " + m.label; b.dataset.key = m.key;
+    b.onclick = () => {
+      const on = state.mood === m.key;
+      state.mood = on ? null : m.key;
+      document.querySelectorAll(".chip").forEach(c => c.classList.toggle("active", c.dataset.key === state.mood));
+      if (!on) { theme(m.colors); generate(); }
+    };
+    $("chips").appendChild(b);
+  });
+});
+
+$("lang").onclick = (e) => {
+  if (!e.target.dataset.v) return;
+  state.language = e.target.dataset.v;
+  [...$("lang").children].forEach(b => b.classList.toggle("on", b === e.target));
+};
+$("count").oninput = () => $("countv").textContent = $("count").value;
+$("text").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) generate(); });
+$("go").onclick = () => { state.mood = null; document.querySelectorAll(".chip").forEach(c => c.classList.remove("active")); generate(); };
+$("shuffle").onclick = () => generate(true);
+
+async function generate(keepMood) {
+  const body = { text: $("text").value, language: state.language, count: +$("count").value, mood: state.mood || (keepMood && state.last ? state.last.mood : null) };
+  if (!body.text.trim() && !body.mood) { toast("Type how you feel or pick a mood 🙂"); return; }
+  $("go").textContent = "Reading the vibe…";
+  try {
+    const res = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    render(data);
+    if (!keepMood) saveHistory(data, $("text").value);
+  } catch (e) { toast("Server not reachable. Is app.py running?"); }
+  $("go").textContent = "Generate vibe ✨";
+}
+
+function render(d) {
+  state.last = d;
+  theme(d.colors);
+  $("emoji").textContent = d.emoji;
+  $("label").textContent = d.label + " vibe";
+  $("vibe").textContent = d.vibe;
+  const tags = [];
+  if (!d.matched) tags.push("Couldn't read that clearly, so here's a calm default");
+  if (d.padded) tags.push("Few songs in that language for this mood, so some are mixed in");
+  if (d.secondary) tags.push("Blended with " + d.secondary.emoji + " " + d.secondary.label);
+  tags.push(d.songs.length + " songs");
+  $("meta").innerHTML = tags.map(t => `<span class="tag">${t}</span>`).join("");
+  $("conf").style.width = "0"; requestAnimationFrame(() => $("conf").style.width = (d.matched ? Math.max(d.confidence, 35) : 15) + "%");
+  const favs = new Set(store("favs") || []);
+  $("songs").innerHTML = d.songs.map((s, i) => `
+    <li class="song" style="animation-delay:${i * 55}ms">
+      <div class="num">${i + 1}</div>
+      <div><div class="t">${esc(s.title)}<span class="lang">${s.lang === "ur" ? "Urdu/Hindi" : "EN"}</span></div><div class="a">${esc(s.artist)}</div></div>
+      <div class="links">
+        <button class="fav ${favs.has(s.title + "|" + s.artist) ? "on" : ""}" data-k="${esc(s.title + "|" + s.artist)}" title="Favorite">♥</button>
+        <a class="yt" href="${s.youtube}" target="_blank" rel="noopener">YouTube</a>
+        <a class="sp" href="${s.spotify}" target="_blank" rel="noopener">Spotify</a>
+      </div>
+    </li>`).join("");
+  document.querySelectorAll(".fav").forEach(b => b.onclick = () => {
+    const f = new Set(store("favs") || []); const k = b.dataset.k;
+    f.has(k) ? f.delete(k) : f.add(k); store("favs", [...f]); b.classList.toggle("on");
+  });
+  $("result").style.display = "block";
+  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function listText() { return state.last ? `${state.last.emoji} ${state.last.label} playlist\n\n` + state.last.songs.map((s, i) => `${i + 1}. ${s.title} - ${s.artist}`).join("\n") : ""; }
+
+$("copy").onclick = async () => { try { await navigator.clipboard.writeText(listText()); toast("Playlist copied ✔"); } catch (e) { toast("Copy not allowed here"); } };
+$("download").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([listText()], { type: "text/plain" }));
+  a.download = `${state.last.mood}-playlist.txt`; a.click(); toast("Downloaded ⬇️");
+};
+$("ytall").onclick = () => { state.last.songs.slice(0, 3).forEach(s => window.open(s.youtube, "_blank")); toast("Opened top 3 (browser may block more)"); };
+
+function saveHistory(d, text) {
+  const h = store("history") || [];
+  h.unshift({ mood: d.mood, label: d.label, emoji: d.emoji, colors: d.colors, text: text.trim(), t: Date.now() });
+  store("history", h.slice(0, 6)); drawHistory();
+}
+function drawHistory() {
+  const h = store("history") || [];
+  $("hist").style.display = h.length ? "block" : "none";
+  $("hlist").innerHTML = h.map((x, i) => `<button class="h" data-i="${i}">${x.emoji} <span>${esc(x.text ? x.text.slice(0, 48) : x.label)}</span><small>${new Date(x.t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small></button>`).join("");
+  document.querySelectorAll(".h").forEach(b => b.onclick = () => { const x = h[+b.dataset.i]; $("text").value = x.text; state.mood = x.mood; generate(); });
+}
+$("clearh").onclick = () => { store("history", []); drawHistory(); };
+drawHistory();
+</script>
+</body>
+</html>
