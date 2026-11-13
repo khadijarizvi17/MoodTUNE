@@ -4,14 +4,6 @@ Type how you feel (English, Urdu or Hinglish) and get a vibe description plus a 
 
 Pure Python standard library. **No pip install needed.**
 
-## Run
-
-```bash
-python app.py
-```
-
-Then open http://localhost:8000 (it opens automatically). Use `PORT=9000 python app.py` to change the port, or `--no-browser` to skip auto-open.
-
 ## Features
 
 - Mood detection from free text (English + Roman Urdu/Hindi keywords like *udaas*, *khush*, *ghussa*, *pyaar*)
